@@ -1235,9 +1235,9 @@ namespace RiskOfImpact
             LanguageAPI.Add("RS_DESC", "Gain <style=cIsUtility>50%</style> (<style=cStack>+50% per stack</style>) radius and range bonuses");
             LanguageAPI.Add("BIOTICSHELL_NAME", "Biotic Shell");
             LanguageAPI.Add("BIOTICSHELL_PICKUP",
-                "<style=cIsVoid>Corrupts all Personal Shield Generators.</style>\nSlows the degradation of temporary barriers.");
+                "<style=cIsVoid>Corrupts all Personal Shield Generators.</style> Slows the degradation of temporary barriers.");
             LanguageAPI.Add("BIOTICSHELL_DESC",
-                "<style=cIsVoid>Corrupts all Personal Shield Generators.</style>\n" +
+                "<style=cIsVoid>Corrupts all Personal Shield Generators.</style> " +
                 "Temporary barriers decay <style=cIsUtility>12%</style> <style=cStack>(+12% per stack)</style> slower.");
             
             
