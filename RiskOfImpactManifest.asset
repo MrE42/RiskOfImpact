@@ -35,7 +35,7 @@ MonoBehaviour:
   Author: MrE42
   Name: RiskOfImpact
   Description: A mod with a collection of items (for now) :)
-  Version: 0.1.1
+  Version: 0.1.2
   Dependencies:
   - {fileID: 11400000, guid: 46f9b0c448564a3e4a046c7e7f835372, type: 2}
   - {fileID: 11400000, guid: 96b1b0a099d0aa02c665488b89e05f9c, type: 2}
