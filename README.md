@@ -7,7 +7,7 @@ Compatible with LookingGlass (and some items appear on CelestialWarTank)
 
 Adds **4 items** and **1 equipment**:
 
-- **2 Uncommon**
+- **1 Uncommon**
 - **2 Legendary**
 - **1 Void**
 - **1 Lunar Equipment**

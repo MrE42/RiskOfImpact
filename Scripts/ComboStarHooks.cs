@@ -153,11 +153,11 @@ namespace RiskOfImpact
 
         private float currentBucketStartTime = -999f;
         private bool stackGrantedThisSkill;
-        private const float BucketSeconds = 0.12f; // your old MergeWindowSeconds
-        
+        private const float BucketSeconds = 0.20f; // your old MergeWindowSeconds
+
         // --- Adaptive timeout tracking ---
         private float lastEligibleExecuteTime = -1f;
-        private float ewmaExecuteInterval = 0.12f;  // start near BucketSeconds
+        private float ewmaExecuteInterval = 0.15f;  // start near BucketSeconds
         private const float ExecuteIntervalAlpha = 0.20f; // EWMA smoothing (0..1)
 
         // --- Adaptive timeout tuning (active combo only) ---
@@ -165,9 +165,32 @@ namespace RiskOfImpact
         private const float ActiveMaxTimeout = 2.0f;       // cap while active (still <= SkillHitTimeout)
         private const float ActiveBaseTimeout = 0.10f;     // baseline latency allowance
         private const float ActiveIntervalMultiplier = 4f; // allow ~4 execute intervals before breaking
-        
 
-        
+        // --- Delayed hit expectation (for long-latency combat skills) ---
+        private const float DelayedSkillHitTimeout = 10f; // buffer window
+        private bool delayedPending;
+        private float delayedPendingExpiresAt;
+        private string delayedPendingToken;
+
+        // Put delayed-latency skill tokens (or prefixes) here.
+        // If you prefer to keep this in ComboStarHooks, you can move it there and call that instead.
+        private static readonly HashSet<string> DelayedSkillTokens = new HashSet<string>
+        {
+            "ENGI_PRIMARY_NAME",
+            "CHEESEWITHHOLES_BASICTANK_BODY_SECONDARY_OBLITERATOR_CANNON_NAME",
+        };
+
+        private static bool SkillIsDelayedHit(SkillDef def)
+        {
+            if (!def) return false;
+            string token = def.skillNameToken;
+
+            if (!string.IsNullOrEmpty(token) && DelayedSkillTokens.Contains(token))
+                return true;
+
+            return false;
+        }
+
         private void Awake()
         {
             body = GetComponent<CharacterBody>();
@@ -182,7 +205,7 @@ namespace RiskOfImpact
         {
             ResetCombo("OnDisable");
         }
-        
+
         private float ComputeBucketTimeoutSeconds(bool comboActive)
         {
             if (!comboActive)
@@ -210,7 +233,7 @@ namespace RiskOfImpact
             int stacks = body.GetBuffCount(buff);
 
             float now = Time.time;
-            
+
             // Update activation cadence EWMA
             if (lastEligibleExecuteTime > 0f)
             {
@@ -220,6 +243,24 @@ namespace RiskOfImpact
                     ewmaExecuteInterval = Mathf.Lerp(ewmaExecuteInterval, dt, ExecuteIntervalAlpha);
             }
             lastEligibleExecuteTime = now;
+
+            // If this is a delayed-latency combat skill, arm a "must see a hit within N seconds" window.
+            // Do NOT enqueue a normal bucket for it, or that un-hit bucket can expire later and reset you incorrectly.
+            if (skill && skill.skillDef && SkillIsDelayedHit(skill.skillDef))
+            {
+                if (stacks > 0) // only meaningful once combo is active
+                {
+                    delayedPending = true;
+                    delayedPendingExpiresAt = now + DelayedSkillHitTimeout;
+                    delayedPendingToken = skill.skillDef.skillNameToken;
+
+                    LogDebug($"[ComboStarTracker] Delayed skill pending window started. body={body.GetDisplayName()}, token={delayedPendingToken}, expiresAt={delayedPendingExpiresAt:0.00}");
+                }
+
+                // still one stack per execute
+                stackGrantedThisSkill = false;
+                return;
+            }
 
             // Start a new bucket if we’re outside the bucket window
             if (buckets.Count == 0 || (now - currentBucketStartTime) > BucketSeconds)
@@ -235,7 +276,6 @@ namespace RiskOfImpact
                     expiresAt = now + timeout
                 });
 
-
                 LogDebug($"[ComboStarTracker] New bucket started. body={body.GetDisplayName()}, stacks={stacks}, buckets={buckets.Count}");
             }
             else
@@ -246,13 +286,20 @@ namespace RiskOfImpact
             // still one stack per execute
             stackGrantedThisSkill = false;
         }
-        
+
         public void RegisterHit()
         {
             if (!body || !body.inventory) return;
 
             int itemCount = body.inventory.GetItemCountEffective(RiskOfImpactContent.GetComboStarItemDef());
             if (itemCount <= 0) return;
+
+            // Any hit satisfies a delayed window (the delayed skill doesn't need direct attribution).
+            if (delayedPending)
+            {
+                delayedPending = false;
+                LogDebug($"[ComboStarTracker] Delayed skill window satisfied by hit. body={body.GetDisplayName()}, token={delayedPendingToken}");
+            }
 
             if (buckets.Count > 0)
             {
@@ -278,8 +325,7 @@ namespace RiskOfImpact
 
             int maxStacks = ComboStarHooks.BaseMaxStacks +
                             ComboStarHooks.ExtraStacksPerItem * (itemCount - 1);
-            
-            
+
             BuffDef maxBuff = RiskOfImpactContent.GetComboStarMaxBuffDef();
 
             if (currentStacks < maxStacks)
@@ -310,6 +356,14 @@ namespace RiskOfImpact
                 return;
             }
 
+            // Expire delayed expectation (only matters when combo is active)
+            if (delayedPending && stacks > 0 && Time.time >= delayedPendingExpiresAt)
+            {
+                LogInfo($"[ComboStarTracker] Delayed skill window expired without hit; resetting combo. body={body.GetDisplayName()}, token={delayedPendingToken}");
+                ResetCombo("Delayed skill hit window expired");
+                return;
+            }
+
             while (buckets.Count > 0 && Time.time >= buckets.Peek().expiresAt)
             {
                 var expired = buckets.Dequeue();
@@ -321,16 +375,15 @@ namespace RiskOfImpact
                     return;
                 }
             }
-            
+
             BuffDef maxBuff = RiskOfImpactContent.GetComboStarMaxBuffDef();
             int maxBuffs = body.GetBuffCount(maxBuff);
-            
+
             if (stacks < maxStacks && maxBuffs > 0)
             {
                 body.RemoveBuff(maxBuff);
             }
         }
-
 
         private void ResetCombo(string reason)
         {
@@ -344,7 +397,7 @@ namespace RiskOfImpact
                 LogInfo($"[ComboStarTracker] ResetCombo: reason={reason}, body={body.GetDisplayName()}, removing {stacks} stacks.");
                 for (int i = 0; i < stacks; i++)
                     body.RemoveBuff(buff);
-                
+
                 BuffDef maxBuff = RiskOfImpactContent.GetComboStarMaxBuffDef();
                 int maxBuffs = body.GetBuffCount(maxBuff);
                 if (maxBuffs > 0)
@@ -359,7 +412,13 @@ namespace RiskOfImpact
 
             buckets.Clear();
             currentBucketStartTime = -999f;
+
+            // Clear delayed state too
+            delayedPending = false;
+            delayedPendingExpiresAt = 0f;
+            delayedPendingToken = null;
         }
     }
+
 
 }

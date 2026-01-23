@@ -5,4 +5,10 @@
 * No more starting items
 # 0.1.2
 * Fixed Item Descriptions in the README
-* Lightened mode size
+* Lightened mod size
+# 0.1.3
+* Fixed ComboStar bug on Engineer (charge up issue)
+* ComboStar leniency updated (was absurdly harsh at times)
+# 0.1.4
+* Fixed Item Count in the README
+* No more starting items (again)
