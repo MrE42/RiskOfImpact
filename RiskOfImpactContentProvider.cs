@@ -1185,6 +1185,10 @@ namespace RiskOfImpact
             _comboStarItem.requiredExpansion = expansionDef;
             _redshifter.requiredExpansion = expansionDef;
             _mug.requiredExpansion = expansionDef;
+            
+            if (RiskOfImpactMain.IsQualityInstalled){
+                ItemQualitiesCompat.RegisterMugVariantsIfNeeded(_mug, dm, expansionDef);
+            }
 
             ItemAPI.Add(new CustomItem(_mug, dm));
             ItemAPI.Add(new CustomItem(_comboStarItem, dc));

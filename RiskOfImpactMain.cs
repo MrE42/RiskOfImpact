@@ -21,6 +21,7 @@ namespace RiskOfImpact
     [BepInDependency("com.bepis.r2api.language")]
     [BepInDependency("com.bepis.r2api.recalculatestats")]
     [BepInDependency("droppod.lookingglass", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("com.Gorakh.ItemQualities", BepInDependency.DependencyFlags.SoftDependency)]
     #endregion
     [BepInPlugin(GUID, MODNAME, VERSION)]
     public class RiskOfImpactMain : BaseUnityPlugin
@@ -36,6 +37,9 @@ namespace RiskOfImpact
         
         public static bool IsLookingGlassInstalled =>
             Chainloader.PluginInfos.ContainsKey("droppod.lookingglass");
+        
+        public static bool IsQualityInstalled =>
+            Chainloader.PluginInfos.ContainsKey("com.Gorakh.ItemQualities");
 
         private void Awake()
         {
@@ -47,6 +51,10 @@ namespace RiskOfImpact
             if (IsLookingGlassInstalled)
             {
                 LookingGlassCompat.Init();
+            }
+            if (IsQualityInstalled)
+            {
+                ItemQualitiesCompat.Init();
             }
             LanceOfLonginusEquipmentHook.Init();
             ComboStarHooks.Init();

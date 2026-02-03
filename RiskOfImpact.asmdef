@@ -68,7 +68,8 @@
         "R2API.TempVisualEffect.dll",
         "Newtonsoft.Json.dll",
         "RiskOfOptions.dll",
-        "LookingGlass.dll"
+        "LookingGlass.dll",
+        "ItemQualities.dll"
     ],
     "autoReferenced": true,
     "defineConstraints": [],
