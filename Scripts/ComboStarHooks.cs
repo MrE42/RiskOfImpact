@@ -1,9 +1,14 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using RoR2;
 using UnityEngine;
 using R2API;
 using RoR2.Skills;
+using UnityEngine.Networking;
 using static RiskOfImpact.RiskOfImpactMain;
+
+// R2API Networking
+using R2API.Networking;
+using R2API.Networking.Interfaces;
 
 namespace RiskOfImpact
 {
@@ -13,9 +18,15 @@ namespace RiskOfImpact
         public const int ExtraStacksPerItem = 10;  // +10 max stacks per extra item
         public const float SkillHitTimeout = 5f;
 
+        // Toggle to spam extra logs
+        public static bool VerboseLogs = true;
+
         public static void Init()
         {
-            LogInfo("[ComboStar] Init: registering hooks.");
+            LogInfo("[ComboStar] Init: registering hooks + net messages.");
+
+            // Net message registration (client -> server)
+            NetworkingAPI.RegisterMessageType<ComboStarSkillExecuteMessage>();
 
             CharacterBody.onBodyStartGlobal += OnBodyStart;
             On.RoR2.GlobalEventManager.OnHitEnemy += GlobalEventManager_OnHitEnemy;
@@ -43,7 +54,7 @@ namespace RiskOfImpact
                     LogDebug($"[ComboStar] SkillCountsForCombo: {token} is blacklisted (setup skill) -> false");
                     return false;
             }
-            
+
             if (token != null && token.StartsWith("CHEESEWITHHOLES_BASICTANK_BODY_UTILITY"))
             {
                 LogDebug($"[ComboStar] SkillCountsForCombo: {token} is exempt (tank utility) -> false");
@@ -56,17 +67,26 @@ namespace RiskOfImpact
                 return false;
             }
 
-            // For now, any combat skill not blacklisted counts
             LogDebug($"[ComboStar] SkillCountsForCombo: {token} isCombatSkill=true -> true");
             return true;
         }
 
-
         private static void OnBodyStart(CharacterBody body)
         {
+            // Only the server should own combo state + timers
+            if (!NetworkServer.active) return;
+
+            if (!body) return;
+
             if (!body.GetComponent<ComboStarTracker>())
             {
                 body.gameObject.AddComponent<ComboStarTracker>();
+
+                if (VerboseLogs)
+                {
+                    var ni = body.GetComponent<NetworkIdentity>();
+                    LogInfo($"[ComboStar] OnBodyStart: Added tracker on SERVER. body={body.GetDisplayName()} netId={(ni ? ni.netId.ToString() : "noNetId")}");
+                }
             }
         }
 
@@ -78,40 +98,46 @@ namespace RiskOfImpact
         {
             orig(self, damageInfo, victim);
 
+            if (!NetworkServer.active) return;
+
             if (!damageInfo.attacker)
             {
-                LogDebug("[ComboStar] OnHitEnemy: attacker is null, ignoring.");
+                if (VerboseLogs) LogDebug("[ComboStar] OnHitEnemy(SERVER): attacker is null, ignoring.");
                 return;
             }
 
             if (damageInfo.rejected || damageInfo.damage <= 0f)
             {
-                LogDebug($"[ComboStar] OnHitEnemy: hit rejected or zero damage (rejected={damageInfo.rejected}, damage={damageInfo.damage}), ignoring.");
+                if (VerboseLogs) LogDebug($"[ComboStar] OnHitEnemy(SERVER): rejected or zero damage (rejected={damageInfo.rejected}, damage={damageInfo.damage}), ignoring.");
                 return;
             }
 
             if ((damageInfo.damageType & DamageType.DoT) != 0)
             {
-                LogDebug("[ComboStar] OnHitEnemy: DoT damage type, ignoring for Combo Star.");
+                if (VerboseLogs) LogDebug("[ComboStar] OnHitEnemy(SERVER): DoT damage type, ignoring.");
                 return;
             }
 
             var attackerBody = damageInfo.attacker.GetComponent<CharacterBody>();
             if (!attackerBody)
             {
-                LogDebug("[ComboStar] OnHitEnemy: attacker has no CharacterBody, ignoring.");
+                if (VerboseLogs) LogDebug("[ComboStar] OnHitEnemy(SERVER): attacker has no CharacterBody, ignoring.");
                 return;
             }
 
             var tracker = attackerBody.GetComponent<ComboStarTracker>();
             if (tracker != null)
             {
-                LogDebug($"[ComboStar] OnHitEnemy: registering hit for body={attackerBody.GetDisplayName()}, damage={damageInfo.damage}");
+                if (VerboseLogs)
+                {
+                    var ni = attackerBody.GetComponent<NetworkIdentity>();
+                    LogDebug($"[ComboStar] OnHitEnemy(SERVER): RegisterHit body={attackerBody.GetDisplayName()} netId={(ni ? ni.netId.ToString() : "noNetId")} dmg={damageInfo.damage:0.0}");
+                }
                 tracker.RegisterHit();
             }
             else
             {
-                LogDebug($"[ComboStar] OnHitEnemy: no ComboStarTracker found on {attackerBody.GetDisplayName()}");
+                if (VerboseLogs) LogDebug($"[ComboStar] OnHitEnemy(SERVER): NO tracker found on {attackerBody.GetDisplayName()}");
             }
         }
 
@@ -119,23 +145,117 @@ namespace RiskOfImpact
             On.RoR2.GenericSkill.orig_OnExecute orig,
             GenericSkill self)
         {
-            var body = self.characterBody;
+            orig(self);
 
-            if (body && SkillCountsForCombo(self))
+            if (!self) return;
+
+            var body = self.characterBody;
+            if (!body) return;
+
+            // Only consider eligible skills
+            if (!SkillCountsForCombo(self)) return;
+
+            // Resolve token for logging/message
+            string token = self.skillDef ? self.skillDef.skillNameToken : "<null_token>";
+
+            var ni = body.GetComponent<NetworkIdentity>();
+            string netIdStr = ni ? ni.netId.ToString() : "noNetId";
+
+            // SERVER PATH: host/server runs state directly
+            if (NetworkServer.active)
             {
                 var tracker = body.GetComponent<ComboStarTracker>();
                 if (tracker != null)
                 {
-                    LogDebug($"[ComboStar] GenericSkill_OnExecute: eligible skill executed. body={body.GetDisplayName()}, skill={self.skillDef.skillNameToken}");
-                    tracker.OnEligibleSkillExecuted(self);
+                    if (VerboseLogs) LogDebug($"[ComboStar] GenericSkill_OnExecute(SERVER): body={body.GetDisplayName()} netId={netIdStr} token={token}");
+                    tracker.OnEligibleSkillExecutedToken(token);
                 }
                 else
                 {
-                    LogDebug($"[ComboStar] GenericSkill_OnExecute: no ComboStarTracker on body={body.GetDisplayName()}");
+                    if (VerboseLogs) LogDebug($"[ComboStar] GenericSkill_OnExecute(SERVER): NO tracker on body={body.GetDisplayName()} netId={netIdStr}");
                 }
+
+                return;
             }
 
-            orig(self);
+            // CLIENT PATH: for remote players, this often fires ONLY on the owning client.
+            // If we have authority, notify server so it can run the bucket logic.
+            if (NetworkClient.active && body.hasAuthority && ni)
+            {
+                if (VerboseLogs) LogDebug($"[ComboStar] GenericSkill_OnExecute(CLIENT->SERVER SEND): body={body.GetDisplayName()} netId={netIdStr} token={token}");
+
+                new ComboStarSkillExecuteMessage(ni.netId, token).Send(NetworkDestination.Server);
+            }
+            else
+            {
+                if (VerboseLogs)
+                {
+                    LogDebug($"[ComboStar] GenericSkill_OnExecute(CLIENT ignored): body={body.GetDisplayName()} netId={netIdStr} " +
+                             $"NetworkClient.active={NetworkClient.active} hasAuthority={body.hasAuthority} hasNetId={(ni != null)} token={token}");
+                }
+            }
+        }
+    }
+
+    // Client -> Server message: "I executed an eligible combat skill"
+    public class ComboStarSkillExecuteMessage : INetMessage
+    {
+        private NetworkInstanceId bodyNetId;
+        private string skillToken;
+
+        // Empty ctor required
+        public ComboStarSkillExecuteMessage() { }
+
+        public ComboStarSkillExecuteMessage(NetworkInstanceId bodyNetId, string skillToken)
+        {
+            this.bodyNetId = bodyNetId;
+            this.skillToken = skillToken;
+        }
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(bodyNetId);
+            writer.Write(skillToken ?? "");
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            bodyNetId = reader.ReadNetworkId();
+            skillToken = reader.ReadString();
+        }
+
+        public void OnReceived()
+        {
+            // Server should be the only place this message is applied
+            if (!NetworkServer.active) return;
+
+            var go = Util.FindNetworkObject(bodyNetId);
+            if (!go)
+            {
+                RiskOfImpactMain.LogDebug($"[ComboStarNet] OnReceived(SERVER): Could not find body object for netId={bodyNetId}");
+                return;
+            }
+
+            var body = go.GetComponent<CharacterBody>();
+            if (!body)
+            {
+                RiskOfImpactMain.LogDebug($"[ComboStarNet] OnReceived(SERVER): netId={bodyNetId} has no CharacterBody");
+                return;
+            }
+
+            var tracker = body.GetComponent<ComboStarTracker>();
+            if (!tracker)
+            {
+                RiskOfImpactMain.LogDebug($"[ComboStarNet] OnReceived(SERVER): netId={bodyNetId} body={body.GetDisplayName()} has NO tracker");
+                return;
+            }
+
+            if (ComboStarHooks.VerboseLogs)
+            {
+                RiskOfImpactMain.LogDebug($"[ComboStarNet] OnReceived(SERVER): Apply skill execute. body={body.GetDisplayName()} netId={bodyNetId} token={skillToken}");
+            }
+
+            tracker.OnEligibleSkillExecutedToken(skillToken);
         }
     }
 
@@ -172,23 +292,15 @@ namespace RiskOfImpact
         private float delayedPendingExpiresAt;
         private string delayedPendingToken;
 
-        // Put delayed-latency skill tokens (or prefixes) here.
-        // If you prefer to keep this in ComboStarHooks, you can move it there and call that instead.
         private static readonly HashSet<string> DelayedSkillTokens = new HashSet<string>
         {
             "ENGI_PRIMARY_NAME",
             "CHEESEWITHHOLES_BASICTANK_BODY_SECONDARY_OBLITERATOR_CANNON_NAME",
         };
 
-        private static bool SkillIsDelayedHit(SkillDef def)
+        private static bool SkillIsDelayedHitToken(string token)
         {
-            if (!def) return false;
-            string token = def.skillNameToken;
-
-            if (!string.IsNullOrEmpty(token) && DelayedSkillTokens.Contains(token))
-                return true;
-
-            return false;
+            return !string.IsNullOrEmpty(token) && DelayedSkillTokens.Contains(token);
         }
 
         private void Awake()
@@ -209,21 +321,17 @@ namespace RiskOfImpact
         private float ComputeBucketTimeoutSeconds(bool comboActive)
         {
             if (!comboActive)
-            {
-                // Keep original behavior for starting/low-stacks: don’t drop buckets too early.
                 return ComboStarHooks.SkillHitTimeout;
-            }
 
-            // Dynamic timeout: base + multiplier * average execute interval
             float t = ActiveBaseTimeout + ActiveIntervalMultiplier * ewmaExecuteInterval;
-
-            // Clamp so it’s snappy in streams but not absurdly short.
             t = Mathf.Clamp(t, ActiveMinTimeout, Mathf.Min(ActiveMaxTimeout, ComboStarHooks.SkillHitTimeout));
             return t;
         }
 
-        public void OnEligibleSkillExecuted(GenericSkill skill)
+        // New: server-side entry point that doesn’t require a GenericSkill reference
+        public void OnEligibleSkillExecutedToken(string token)
         {
+            if (!NetworkServer.active) return;
             if (!body || !body.inventory) return;
 
             int itemCount = body.inventory.GetItemCountEffective(RiskOfImpactContent.GetComboStarItemDef());
@@ -238,31 +346,29 @@ namespace RiskOfImpact
             if (lastEligibleExecuteTime > 0f)
             {
                 float dt = now - lastEligibleExecuteTime;
-                // Ignore ridiculous gaps/spikes (prevents one pause from blowing up the average)
                 if (dt > 0f && dt < 1.0f)
                     ewmaExecuteInterval = Mathf.Lerp(ewmaExecuteInterval, dt, ExecuteIntervalAlpha);
             }
             lastEligibleExecuteTime = now;
 
-            // If this is a delayed-latency combat skill, arm a "must see a hit within N seconds" window.
-            // Do NOT enqueue a normal bucket for it, or that un-hit bucket can expire later and reset you incorrectly.
-            if (skill && skill.skillDef && SkillIsDelayedHit(skill.skillDef))
+            // Delayed-latency skill window
+            if (SkillIsDelayedHitToken(token))
             {
-                if (stacks > 0) // only meaningful once combo is active
+                if (stacks > 0)
                 {
                     delayedPending = true;
                     delayedPendingExpiresAt = now + DelayedSkillHitTimeout;
-                    delayedPendingToken = skill.skillDef.skillNameToken;
+                    delayedPendingToken = token;
 
-                    LogDebug($"[ComboStarTracker] Delayed skill pending window started. body={body.GetDisplayName()}, token={delayedPendingToken}, expiresAt={delayedPendingExpiresAt:0.00}");
+                    if (ComboStarHooks.VerboseLogs)
+                        RiskOfImpactMain.LogDebug($"[ComboStarTracker] Delayed pending started. body={body.GetDisplayName()}, token={token}, expiresAt={delayedPendingExpiresAt:0.00}");
                 }
 
-                // still one stack per execute
                 stackGrantedThisSkill = false;
                 return;
             }
 
-            // Start a new bucket if we’re outside the bucket window
+            // Bucket create / reuse
             if (buckets.Count == 0 || (now - currentBucketStartTime) > BucketSeconds)
             {
                 currentBucketStartTime = now;
@@ -276,34 +382,40 @@ namespace RiskOfImpact
                     expiresAt = now + timeout
                 });
 
-                LogDebug($"[ComboStarTracker] New bucket started. body={body.GetDisplayName()}, stacks={stacks}, buckets={buckets.Count}");
+                if (ComboStarHooks.VerboseLogs)
+                    RiskOfImpactMain.LogDebug($"[ComboStarTracker] New bucket. body={body.GetDisplayName()}, token={token}, stacks={stacks}, buckets={buckets.Count}, expiresAt={(now + timeout):0.00}");
             }
             else
             {
-                LogDebug($"[ComboStarTracker] Using existing bucket. body={body.GetDisplayName()}, stacks={stacks}, buckets={buckets.Count}");
+                if (ComboStarHooks.VerboseLogs)
+                    RiskOfImpactMain.LogDebug($"[ComboStarTracker] Reuse bucket. body={body.GetDisplayName()}, token={token}, stacks={stacks}, buckets={buckets.Count}");
             }
 
-            // still one stack per execute
+            // Important: this is what was missing for remote players on server
             stackGrantedThisSkill = false;
         }
 
         public void RegisterHit()
         {
+            if (!NetworkServer.active) return;
+
             if (!body || !body.inventory) return;
 
             int itemCount = body.inventory.GetItemCountEffective(RiskOfImpactContent.GetComboStarItemDef());
             if (itemCount <= 0) return;
 
-            // Any hit satisfies a delayed window (the delayed skill doesn't need direct attribution).
+            // Any hit satisfies delayed window
             if (delayedPending)
             {
                 delayedPending = false;
-                LogDebug($"[ComboStarTracker] Delayed skill window satisfied by hit. body={body.GetDisplayName()}, token={delayedPendingToken}");
+
+                if (ComboStarHooks.VerboseLogs)
+                    RiskOfImpactMain.LogDebug($"[ComboStarTracker] Delayed window satisfied by hit. body={body.GetDisplayName()}, token={delayedPendingToken}");
             }
 
+            // Mark newest bucket hit
             if (buckets.Count > 0)
             {
-                // Mark the newest bucket as hit (we need to edit it in-place, so rotate queue)
                 int n = buckets.Count;
                 Bucket last = default;
 
@@ -317,11 +429,21 @@ namespace RiskOfImpact
                 last.hadHit = true;
                 buckets.Enqueue(last);
             }
+            else
+            {
+                if (ComboStarHooks.VerboseLogs)
+                    RiskOfImpactMain.LogDebug($"[ComboStarTracker] RegisterHit: NO buckets (hit happened without execute tracking). body={body.GetDisplayName()}");
+            }
 
             BuffDef buff = RiskOfImpactContent.GetComboStarBuffDef();
             int currentStacks = body.GetBuffCount(buff);
 
-            if (stackGrantedThisSkill) return;
+            if (stackGrantedThisSkill)
+            {
+                if (ComboStarHooks.VerboseLogs)
+                    RiskOfImpactMain.LogDebug($"[ComboStarTracker] RegisterHit: stack already granted this skill. body={body.GetDisplayName()} stacks={currentStacks}");
+                return;
+            }
 
             int maxStacks = ComboStarHooks.BaseMaxStacks +
                             ComboStarHooks.ExtraStacksPerItem * (itemCount - 1);
@@ -333,15 +455,23 @@ namespace RiskOfImpact
                 body.AddBuff(buff);
                 currentStacks += 1;
                 stackGrantedThisSkill = true;
+
+                if (ComboStarHooks.VerboseLogs)
+                    RiskOfImpactMain.LogDebug($"[ComboStarTracker] +STACK. body={body.GetDisplayName()} stacksNow={currentStacks}/{maxStacks}");
+
                 if (currentStacks == maxStacks)
                 {
                     body.AddBuff(maxBuff);
+
+                    if (ComboStarHooks.VerboseLogs)
+                        RiskOfImpactMain.LogDebug($"[ComboStarTracker] MAX reached. body={body.GetDisplayName()} added max buff.");
                 }
             }
         }
 
         private void FixedUpdate()
         {
+            // This component only exists server-side because you add it only on server.
             if (!body || !body.inventory) return;
 
             int itemCount = body.inventory.GetItemCountEffective(RiskOfImpactContent.GetComboStarItemDef());
@@ -356,21 +486,22 @@ namespace RiskOfImpact
                 return;
             }
 
-            // Expire delayed expectation (only matters when combo is active)
+            // Expire delayed expectation
             if (delayedPending && stacks > 0 && Time.time >= delayedPendingExpiresAt)
             {
-                LogInfo($"[ComboStarTracker] Delayed skill window expired without hit; resetting combo. body={body.GetDisplayName()}, token={delayedPendingToken}");
+                RiskOfImpactMain.LogInfo($"[ComboStarTracker] Delayed expired -> reset. body={body.GetDisplayName()}, token={delayedPendingToken}");
                 ResetCombo("Delayed skill hit window expired");
                 return;
             }
 
+            // Bucket expiration
             while (buckets.Count > 0 && Time.time >= buckets.Peek().expiresAt)
             {
                 var expired = buckets.Dequeue();
 
                 if (stacks > 0 && !expired.hadHit)
                 {
-                    LogInfo($"[ComboStarTracker] Bucket expired without hit, resetting combo. body={body.GetDisplayName()}");
+                    RiskOfImpactMain.LogInfo($"[ComboStarTracker] Bucket expired without hit -> reset. body={body.GetDisplayName()}");
                     ResetCombo("Bucket expired without hit");
                     return;
                 }
@@ -382,6 +513,9 @@ namespace RiskOfImpact
             if (stacks < maxStacks && maxBuffs > 0)
             {
                 body.RemoveBuff(maxBuff);
+
+                if (ComboStarHooks.VerboseLogs)
+                    RiskOfImpactMain.LogDebug($"[ComboStarTracker] Removed max buff because stacks dropped. body={body.GetDisplayName()} stacks={stacks}/{maxStacks}");
             }
         }
 
@@ -394,31 +528,29 @@ namespace RiskOfImpact
 
             if (stacks > 0)
             {
-                LogInfo($"[ComboStarTracker] ResetCombo: reason={reason}, body={body.GetDisplayName()}, removing {stacks} stacks.");
+                RiskOfImpactMain.LogInfo($"[ComboStarTracker] ResetCombo: reason={reason}, body={body.GetDisplayName()}, removing {stacks} stacks.");
                 for (int i = 0; i < stacks; i++)
                     body.RemoveBuff(buff);
 
                 BuffDef maxBuff = RiskOfImpactContent.GetComboStarMaxBuffDef();
                 int maxBuffs = body.GetBuffCount(maxBuff);
                 if (maxBuffs > 0)
-                {
                     body.RemoveBuff(maxBuff);
-                }
             }
             else
             {
-                LogDebug($"[ComboStarTracker] ResetCombo: reason={reason}, body={body.GetDisplayName()}, no stacks to remove.");
+                if (ComboStarHooks.VerboseLogs)
+                    RiskOfImpactMain.LogDebug($"[ComboStarTracker] ResetCombo: reason={reason}, body={body.GetDisplayName()}, no stacks to remove.");
             }
 
             buckets.Clear();
             currentBucketStartTime = -999f;
 
-            // Clear delayed state too
             delayedPending = false;
             delayedPendingExpiresAt = 0f;
             delayedPendingToken = null;
+
+            stackGrantedThisSkill = false;
         }
     }
-
-
 }

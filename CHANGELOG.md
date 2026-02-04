@@ -12,3 +12,5 @@
 # 0.1.4
 * Fixed Item Count in the README
 * No more starting items (again)
+# 0.1.5
+* Fixed multiplayer handling for ComboStar

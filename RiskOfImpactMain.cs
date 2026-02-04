@@ -27,7 +27,7 @@ namespace RiskOfImpact
     {
         public const string GUID = "com.MrE42.RiskOfImpact";
         public const string MODNAME = "Risk Of Impact";
-        public const string VERSION = "0.1.4";
+        public const string VERSION = "0.1.5";
 
         public static PluginInfo pluginInfo { get; private set; }
         public static RiskOfImpactMain instance { get; private set; }

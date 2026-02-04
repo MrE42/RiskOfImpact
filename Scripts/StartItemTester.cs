@@ -17,15 +17,15 @@ namespace RiskOfImpact
             if (!NetworkServer.active) return;
 
             // How many copies of each item you want to start with 
-            const int redshifterStacks   = 1;
+            const int redshifterStacks   = 0;
             const int comboStarStacks    = 1;
             const int cheerfulMugStacks  = 0;
-            const int bioticShellStacks  = 30;
+            const int bioticShellStacks  = 0;
             const int a = 0;
             const int b = 0;
             const int c = 0;
             const int d = 0;
-            const int e = 1;
+            const int e = 0;
 
             foreach (var pcmc in PlayerCharacterMasterController.instances)
             {
@@ -54,12 +54,15 @@ namespace RiskOfImpact
                 if (d > 0)
                     inv.GiveItemPermanent(DLC3Content.Items.ShockDamageAura, d);
                 if (e == 1)
+                {
                     if (RiskOfImpactContent.GetLanceEquipmentDef().equipmentIndex == EquipmentIndex.None)
                         RiskOfImpactContent.GetLanceEquipmentDef().equipmentIndex = EquipmentCatalog.FindEquipmentIndex(RiskOfImpactContent.GetLanceEquipmentDef().name);
 
                     if (RiskOfImpactContent.GetLanceEquipmentDef().equipmentIndex == EquipmentIndex.None) return;
                     
                     inv.SetEquipmentIndex(RiskOfImpactContent.GetLanceEquipmentDef().equipmentIndex);
+                }
+                    
 
             }
         }
