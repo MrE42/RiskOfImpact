@@ -18,9 +18,10 @@ namespace RiskOfImpact
 
             // How many copies of each item you want to start with 
             const int redshifterStacks   = 0;
-            const int comboStarStacks    = 1;
+            const int comboStarStacks    = 20;
             const int cheerfulMugStacks  = 0;
             const int bioticShellStacks  = 0;
+            const int doomedMoonStacks  = 1;
             const int a = 0;
             const int b = 0;
             const int c = 0;
@@ -45,15 +46,23 @@ namespace RiskOfImpact
                 if (bioticShellStacks > 0)
                     inv.GiveItemPermanent(RiskOfImpactContent.GetBioticShellItemDef(), bioticShellStacks);
                 
+                if (doomedMoonStacks > 0)
+                    inv.GiveItemPermanent(RiskOfImpactContent.GetDoomedMoonItemDef(), doomedMoonStacks);
+                
                 if (a > 0)
-                    inv.GiveItemPermanent(RoR2Content.Items.RandomDamageZone, a);
+                    inv.GiveItemPermanent(RoR2Content.Items.ExtraLife, a);
                 if (b > 0)
                     inv.GiveItemPermanent(DLC1Content.Items.MushroomVoid, b);
                 if (c > 0)
-                    inv.GiveItemPermanent(DLC2Content.Items.TriggerEnemyDebuffs, c);
+                {
+                    inv.GiveItemPermanent(DLC2Content.Items.TeleportOnLowHealth, c);
+                    inv.GiveItemPermanent(DLC2Content.Items.TeleportOnLowHealthConsumed, c);
+                    inv.GiveItemPermanent(DLC2Content.Items.ExtraStatsOnLevelUp, c);
+                }
+
                 if (d > 0)
                     inv.GiveItemPermanent(DLC3Content.Items.ShockDamageAura, d);
-                if (e == 1)
+                if (e > 0)
                 {
                     if (RiskOfImpactContent.GetLanceEquipmentDef().equipmentIndex == EquipmentIndex.None)
                         RiskOfImpactContent.GetLanceEquipmentDef().equipmentIndex = EquipmentCatalog.FindEquipmentIndex(RiskOfImpactContent.GetLanceEquipmentDef().name);

@@ -34,6 +34,12 @@ namespace RiskOfImpact
         private static ItemDef _bioticShell;
         private static GameObject _bioticShellDisplayPrefab;
 
+        private static ItemDef _doomedMoon;
+        private static GameObject _doomedMoonDisplayPrefab;
+        private static GameObject _doomedMoonDisplayFollowerPrefab;
+        private static ItemDef _doomedMoonConsumed;
+        private static ItemDef _doomedMoonStatToken;
+        
         public IEnumerator LoadStaticContentAsync(LoadStaticContentAsyncArgs args)
         {
             // Load the asset bundle from disk
@@ -62,6 +68,12 @@ namespace RiskOfImpact
                     .LoadAssetAsync<RoR2.ExpansionManagement.ExpansionDef>("RoR2/DLC1/Common/DLC1.asset")
                     .WaitForCompletion();
             _bioticShellDisplayPrefab = _myBundle.LoadAsset<GameObject>("PickupBS");
+            
+            _doomedMoon = _myBundle.LoadAsset<ItemDef>("DoomedMoon");
+            _doomedMoonDisplayPrefab = _myBundle.LoadAsset<GameObject>("PlayerDisplayDM");
+            _doomedMoonDisplayFollowerPrefab = _myBundle.LoadAsset<GameObject>("DisplayFollowerDM");
+            _doomedMoonConsumed = _myBundle.LoadAsset<ItemDef>("DoomedMoonConsumed");
+            _doomedMoonStatToken = _myBundle.LoadAsset<ItemDef>("DoomedMoonStatToken");
 
             _lanceEquipmentDef = _myBundle.LoadAsset<EquipmentDef>("LanceOfLonginusEquipmentDef");
             _lanceProjectilePrefab = _myBundle.LoadAsset<GameObject>("LanceProjectilePrefab");
@@ -77,6 +89,7 @@ namespace RiskOfImpact
             var drs = new ItemDisplayRuleDict();
             var dbs = new ItemDisplayRuleDict();
             var dl = new ItemDisplayRuleDict();
+            var ddm = new ItemDisplayRuleDict();
 
             // Commando
             dc.Add("mdlCommandoDualies", new[]
@@ -115,6 +128,20 @@ namespace RiskOfImpact
                     localPos = new Vector3(0.659F, 0.394F, -0.787F),
                     localAngles = new Vector3(90.0003F, 180.079F, 180.4018F),
                     localScale = new Vector3(1F, 1F, 1F)
+                }
+            });
+            
+            ddm.Add("mdlCommandoDualies", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.92478F, -0.45384F, -1.30414F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
                 }
             });
             
@@ -171,6 +198,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlHuntress", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.92478F, -0.45384F, -1.30414F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
+                }
+            });
+            
             dbs.Add("mdlHuntress", new[]
             {
                 new ItemDisplayRule
@@ -221,6 +262,20 @@ namespace RiskOfImpact
                     localPos = new Vector3(-0.36643F, 1.76863F, 0.55818F),
                     localAngles = new Vector3(0.0713F, 344.7929F, 0F),
                     localScale = new Vector3(1F, 1F, 1F)
+                }
+            });
+            
+            ddm.Add("mdlBandit2", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(0.76099F, 0.41951F, -1.30499F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
                 }
             });
             
@@ -277,6 +332,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlToolbot", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Chest",
+                    localPos = new Vector3(-4.74067F, 8.84387F, -6.63475F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
+                }
+            });
+            
             dbs.Add("mdlToolbot", new[]
             {
                 new ItemDisplayRule
@@ -327,6 +396,20 @@ namespace RiskOfImpact
                     localPos = new Vector3(0.659F, 0.394F, -0.787F),
                     localAngles = new Vector3(90.0003F, 180.079F, 180.4018F),
                     localScale = new Vector3(1F, 1F, 1F)
+                }
+            });
+            
+            ddm.Add("mdlEngi", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.92478F, -0.45384F, -1.30414F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
                 }
             });
             
@@ -383,6 +466,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlMage", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.92478F, -0.45384F, -1.30414F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
+                }
+            });
+            
             dbs.Add("mdlMage", new[]
             {
                 new ItemDisplayRule
@@ -433,6 +530,20 @@ namespace RiskOfImpact
                     localPos = new Vector3(0.659F, 0.394F, -0.787F),
                     localAngles = new Vector3(90.0003F, 180.079F, 180.4018F),
                     localScale = new Vector3(1F, 1F, 1F)
+                }
+            });
+            
+            ddm.Add("mdlMerc", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.92478F, -0.45384F, -1.30414F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
                 }
             });
             
@@ -489,6 +600,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlTreebot", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "PlatformBase",
+                    localPos = new Vector3(-1.57404F, 3.24967F, -1.88479F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(1.5F, 1.5F, 1.5F)
+
+                }
+            });
+            
             dbs.Add("mdlTreebot", new[]
             {
                 new ItemDisplayRule
@@ -542,6 +667,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlLoader", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Chest",
+                    localPos = new Vector3(-0.9262F, 1.13019F, -1.1029F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
+                }
+            });
+            
             dbs.Add("mdlLoader", new[]
             {
                 new ItemDisplayRule
@@ -592,6 +731,20 @@ namespace RiskOfImpact
                     localPos = new Vector3(-5.04F, -3.02F, 5.34F),
                     localAngles = new Vector3(84.9998F, 359.9714F, 359.584F),
                     localScale = new Vector3(1F, 1F, 1F)
+                }
+            });
+            
+            ddm.Add("mdlCroco", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Chest",
+                    localPos = new Vector3(-7.60114F, 1.59776F, 9.56897F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(1F, 1F, 1F)
+
                 }
             });
             
@@ -649,6 +802,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlCaptain", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.92478F, -0.45384F, -1.30414F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
+                }
+            });
+            
             dbs.Add("mdlCaptain", new[]
             {
                 new ItemDisplayRule
@@ -702,6 +869,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlHeretic", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Chest",
+                    localPos = new Vector3(-1.06155F, -0.90547F, 1.83211F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(1F, 1F, 1F)
+
+                }
+            });
+            
             // Railgunner
             dc.Add("mdlRailGunner", new[]
             {
@@ -739,6 +920,20 @@ namespace RiskOfImpact
                     localPos = new Vector3(0.799F, 0.04025F, -0.28362F),
                     localAngles = new Vector3(90.00027F, 180.079F, 180.4018F),
                     localScale = new Vector3(1F, 1F, 1F)
+                }
+            });
+            
+            ddm.Add("mdlRailGunner", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.92478F, -0.45384F, -1.30414F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
                 }
             });
             
@@ -795,6 +990,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlVoidSurvivor", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.92478F, 0.24515F, 0.64663F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
+                }
+            });
+            
             dbs.Add("mdlVoidSurvivor", new[]
             {
                 new ItemDisplayRule
@@ -845,6 +1054,20 @@ namespace RiskOfImpact
                     localPos = new Vector3(0.649F, 1.727F, -0.109F),
                     localAngles = new Vector3(14.33531F, 0.39733F, 0.22404F),
                     localScale = new Vector3(1F, 1F, 1F)
+                }
+            });
+            
+            ddm.Add("mdlSeeker", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.91217F, 2.18543F, -0.30558F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
                 }
             });
             
@@ -901,6 +1124,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlFalseSon", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Root",
+                    localPos = new Vector3(-1.25927F, 3.85099F, -1.37428F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(1F, 1F, 1F)
+
+                }
+            });
+            
             dbs.Add("mdlFalseSon", new[]
             {
                 new ItemDisplayRule
@@ -951,6 +1188,20 @@ namespace RiskOfImpact
                     localPos = new Vector3(-0.787F, 1.34229F, 0.41002F),
                     localAngles = new Vector3(0.11209F, 89.41496F, 19.53264F),
                     localScale = new Vector3(1F, 1F, 1F)
+                }
+            });
+            
+            ddm.Add("mdlChef", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Root",
+                    localPos = new Vector3(1.08621F, 2.5569F, -1.11563F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
                 }
             });
             
@@ -1007,6 +1258,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlDroneTech", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(1.80938F, 1.72888F, 0.44503F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
+                }
+            });
+            
             dbs.Add("mdlDroneTech", new[]
             {
                 new ItemDisplayRule
@@ -1060,6 +1325,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlDrifter", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-0.62317F, -1.03718F, -1.42457F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
+                }
+            });
+            
             dbs.Add("mdlDrifter", new[]
             {
                 new ItemDisplayRule
@@ -1110,6 +1389,20 @@ namespace RiskOfImpact
                     localPos = new Vector3(1.50346F, 2.04334F, -0.38996F),
                     localAngles = new Vector3(-0.00001F, 180F, 180F),
                     localScale = new Vector3(1F, 1F, 1F)
+                }
+            });
+            
+            ddm.Add("mdlBasicTank", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "ROOT",
+                    localPos = new Vector3(-1.71963F, 2.4493F, -1.30414F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(1F, 1F, 1F)
+
                 }
             });
             
@@ -1168,6 +1461,20 @@ namespace RiskOfImpact
                 }
             });
             
+            ddm.Add("mdlEngiTurret", new[]
+            {
+                new ItemDisplayRule
+                {
+                    ruleType = ItemDisplayRuleType.ParentedPrefab,
+                    followerPrefab = _doomedMoonDisplayPrefab,
+                    childName = "Base",
+                    localPos = new Vector3(-2.34182F, 3.93022F, -1.91096F),
+                    localAngles = new Vector3(0F, 0F, 45F),
+                    localScale = new Vector3(0.8F, 0.8F, 0.8F)
+
+                }
+            });
+            
             dbs.Add("mdlEngiTurret", new[]
             {
                 new ItemDisplayRule
@@ -1184,6 +1491,7 @@ namespace RiskOfImpact
             _lanceEquipmentDef.requiredExpansion = expansionDef;
             _comboStarItem.requiredExpansion = expansionDef;
             _redshifter.requiredExpansion = expansionDef;
+            _doomedMoon.requiredExpansion = expansionDef;
             _mug.requiredExpansion = expansionDef;
 
             ItemAPI.Add(new CustomItem(_mug, dm));
@@ -1191,6 +1499,9 @@ namespace RiskOfImpact
             ItemAPI.Add(new CustomItem(_redshifter, drs));
             ItemAPI.Add(new CustomItem(_bioticShell, dbs));
             ItemAPI.Add(new CustomEquipment(_lanceEquipmentDef, dl));
+            ItemAPI.Add(new CustomItem(_doomedMoon, ddm));
+            ItemAPI.Add(new CustomItem(_doomedMoonConsumed, new ItemDisplayRuleDict()));
+            ItemAPI.Add(new CustomItem(_doomedMoonStatToken, new ItemDisplayRuleDict()));
 
             // Add them to the ContentPack
             RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _mug });
@@ -1198,6 +1509,9 @@ namespace RiskOfImpact
             RiskOfImpactContentPack.buffDefs.Add(new BuffDef[] { _comboStarBuff });
             RiskOfImpactContentPack.buffDefs.Add(new BuffDef[] { _comboStarMaxBuff });
             RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _redshifter });
+            RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _doomedMoon });
+            RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _doomedMoonConsumed });
+            RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _doomedMoonStatToken });
             RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _bioticShell });
             RiskOfImpactContentPack.equipmentDefs.Add(new EquipmentDef[] { _lanceEquipmentDef });
             RiskOfImpactContentPack.projectilePrefabs.Add(new GameObject[] { _lanceProjectilePrefab });
@@ -1239,7 +1553,18 @@ namespace RiskOfImpact
             LanguageAPI.Add("BIOTICSHELL_DESC",
                 "<style=cIsVoid>Corrupts all Personal Shield Generators.</style> " +
                 "Temporary barriers decay <style=cIsUtility>12%</style> <style=cStack>(+12% per stack)</style> slower.");
-            
+            LanguageAPI.Add("DM_NAME", "Doomed Moon");
+            LanguageAPI.Add("DM_PICKUP", "Revive each stage, but <style=cDeath>but lose items</style>");
+            LanguageAPI.Add("DM_DESC", "Gain a <style=cIsHealing>revive</style> each stage <style=cStack>(+1 per stack)</style>. " +
+                                       "<style=cDeath>Break 5 random items</style> on revive <style=cArtifact>(excluding Void items)</style>. " +
+                                       "After reviving, permanently gain <style=cIsUtility>+10%</style> <style=cStack>(+10% per stack)</style> to <style=cShrine>all stats</style>. " +
+                                       "<style=cDeath>Fails if fewer than 5 eligible items exist</style>." );
+
+            LanguageAPI.Add("DMC_NAME", "Doomed Moon (Consumed)");
+            LanguageAPI.Add("DMC_DESC", "Gain a <style=cIsHealing>revive</style> each stage <style=cStack>(+1 per stack)</style>. " +
+                                       "<style=cDeath>Break 5 random items</style> on revive <style=cArtifact>(excluding Void items)</style>. " +
+                                       "After reviving, permanently gain <style=cIsUtility>+10%</style> <style=cStack>(+10% per stack)</style> to <style=cShrine>all stats</style>. " +
+                                       "<style=cDeath>Fails if fewer than 5 eligible items exist</style>." );
             
             
             // --- Void corruption setup (Personal Shield Generator -> Biotic Shell) ---
@@ -1339,6 +1664,9 @@ namespace RiskOfImpact
         public static BuffDef GetComboStarMaxBuffDef() => _comboStarMaxBuff;
         public static ItemDef GetMugItemDef() => _mug;
         public static ItemDef GetRedshifterItemDef() => _redshifter;
+        public static ItemDef GetDoomedMoonItemDef() => _doomedMoon;
+        public static ItemDef GetDoomedMoonConsumedItemDef() => _doomedMoonConsumed;
+        public static ItemDef GetDoomedMoonStatTokenItemDef() => _doomedMoonStatToken;
         public static ItemDef GetBioticShellItemDef() => _bioticShell;
 
     }

@@ -27,7 +27,7 @@ namespace RiskOfImpact
     {
         public const string GUID = "com.MrE42.RiskOfImpact";
         public const string MODNAME = "Risk Of Impact";
-        public const string VERSION = "0.1.5";
+        public const string VERSION = "0.2.0";
 
         public static PluginInfo pluginInfo { get; private set; }
         public static RiskOfImpactMain instance { get; private set; }
@@ -52,7 +52,7 @@ namespace RiskOfImpact
             ComboStarHooks.Init();
             RedshifterHooks.Init();
             BioticShellHooks.Init();
-
+            DoomedMoonHooks.Init();
             //StartItemTester.Init();
         }
         internal static void LogFatal(object data) { instance.Logger.LogFatal(data); }
