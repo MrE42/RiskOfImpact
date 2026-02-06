@@ -1,3 +1,5 @@
+# 0.3.1
+* Fixed RedShifter pickup model
 # 0.3.0
 * Added RiskyDice lunar item
 * Rebalanced DoomedMoon
