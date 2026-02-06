@@ -18,12 +18,13 @@ namespace RiskOfImpact
 
             // How many copies of each item you want to start with 
             const int redshifterStacks   = 0;
-            const int comboStarStacks    = 20;
+            const int comboStarStacks    = 0;
             const int cheerfulMugStacks  = 0;
             const int bioticShellStacks  = 0;
-            const int doomedMoonStacks  = 1;
+            const int doomedMoonStacks  = 2;
+            const int riskyDiceStacks  = 2;
             const int a = 0;
-            const int b = 0;
+            const int b = 100;
             const int c = 0;
             const int d = 0;
             const int e = 0;
@@ -49,15 +50,17 @@ namespace RiskOfImpact
                 if (doomedMoonStacks > 0)
                     inv.GiveItemPermanent(RiskOfImpactContent.GetDoomedMoonItemDef(), doomedMoonStacks);
                 
+                if (riskyDiceStacks > 0)
+                    inv.GiveItemPermanent(RiskOfImpactContent.GetRiskyDiceItemDef(), riskyDiceStacks);
+                
                 if (a > 0)
-                    inv.GiveItemPermanent(RoR2Content.Items.ExtraLife, a);
+                    inv.GiveItemPermanent(RoR2Content.Items.TonicAffliction, a);
                 if (b > 0)
-                    inv.GiveItemPermanent(DLC1Content.Items.MushroomVoid, b);
+                    inv.GiveItemPermanent(DLC1Content.Items.LunarSun, b);
                 if (c > 0)
                 {
-                    inv.GiveItemPermanent(DLC2Content.Items.TeleportOnLowHealth, c);
-                    inv.GiveItemPermanent(DLC2Content.Items.TeleportOnLowHealthConsumed, c);
-                    inv.GiveItemPermanent(DLC2Content.Items.ExtraStatsOnLevelUp, c);
+                    inv.GiveItemPermanent(DLC2Content.Items.ExtraShrineItem, c);
+                    //inv.GiveItemPermanent(DLC2Content.Items.LowerPricedChests, c);
                 }
 
                 if (d > 0)

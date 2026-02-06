@@ -39,6 +39,13 @@ namespace RiskOfImpact
         private static GameObject _doomedMoonDisplayFollowerPrefab;
         private static ItemDef _doomedMoonConsumed;
         private static ItemDef _doomedMoonStatToken;
+        private static BuffDef _doomedMoonBuff;
+
+        
+        private static ItemDef _riskyDice;
+        private static ItemDef _riskyDiceCount;
+        private static ItemDef _riskyDiceAffliction;
+        private static BuffDef _riskyDiceBuff;
         
         public IEnumerator LoadStaticContentAsync(LoadStaticContentAsyncArgs args)
         {
@@ -74,6 +81,12 @@ namespace RiskOfImpact
             _doomedMoonDisplayFollowerPrefab = _myBundle.LoadAsset<GameObject>("DisplayFollowerDM");
             _doomedMoonConsumed = _myBundle.LoadAsset<ItemDef>("DoomedMoonConsumed");
             _doomedMoonStatToken = _myBundle.LoadAsset<ItemDef>("DoomedMoonStatToken");
+            _doomedMoonBuff = _myBundle.LoadAsset<BuffDef>("DoomedMoonBuff");
+            
+            _riskyDice = _myBundle.LoadAsset<ItemDef>("RiskyDice");
+            _riskyDiceCount = _myBundle.LoadAsset<ItemDef>("RiskyDiceCount");
+            _riskyDiceAffliction = _myBundle.LoadAsset<ItemDef>("RiskyDiceAffliction");
+            _riskyDiceBuff = _myBundle.LoadAsset<BuffDef>("RiskyDiceBuff");
 
             _lanceEquipmentDef = _myBundle.LoadAsset<EquipmentDef>("LanceOfLonginusEquipmentDef");
             _lanceProjectilePrefab = _myBundle.LoadAsset<GameObject>("LanceProjectilePrefab");
@@ -1493,6 +1506,12 @@ namespace RiskOfImpact
             _redshifter.requiredExpansion = expansionDef;
             _doomedMoon.requiredExpansion = expansionDef;
             _mug.requiredExpansion = expansionDef;
+            _riskyDice.requiredExpansion = expansionDef;
+            _riskyDiceCount.requiredExpansion = expansionDef;
+            _riskyDiceAffliction.requiredExpansion = expansionDef;
+            
+            _riskyDiceCount.hidden = true;
+
 
             ItemAPI.Add(new CustomItem(_mug, dm));
             ItemAPI.Add(new CustomItem(_comboStarItem, dc));
@@ -1502,6 +1521,9 @@ namespace RiskOfImpact
             ItemAPI.Add(new CustomItem(_doomedMoon, ddm));
             ItemAPI.Add(new CustomItem(_doomedMoonConsumed, new ItemDisplayRuleDict()));
             ItemAPI.Add(new CustomItem(_doomedMoonStatToken, new ItemDisplayRuleDict()));
+            ItemAPI.Add(new CustomItem(_riskyDice, new ItemDisplayRuleDict()));
+            ItemAPI.Add(new CustomItem(_riskyDiceCount, new ItemDisplayRuleDict()));
+            ItemAPI.Add(new CustomItem(_riskyDiceAffliction, new ItemDisplayRuleDict()));
 
             // Add them to the ContentPack
             RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _mug });
@@ -1512,6 +1534,11 @@ namespace RiskOfImpact
             RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _doomedMoon });
             RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _doomedMoonConsumed });
             RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _doomedMoonStatToken });
+            RiskOfImpactContentPack.buffDefs.Add(new BuffDef[] { _doomedMoonBuff });
+            RiskOfImpactContentPack.itemDefs.Add( new ItemDef[] { _riskyDice });
+            RiskOfImpactContentPack.itemDefs.Add( new ItemDef[] { _riskyDiceCount });
+            RiskOfImpactContentPack.itemDefs.Add( new ItemDef[] { _riskyDiceAffliction });
+            RiskOfImpactContentPack.buffDefs.Add(new BuffDef[] { _riskyDiceBuff });
             RiskOfImpactContentPack.itemDefs.Add(new ItemDef[] { _bioticShell });
             RiskOfImpactContentPack.equipmentDefs.Add(new EquipmentDef[] { _lanceEquipmentDef });
             RiskOfImpactContentPack.projectilePrefabs.Add(new GameObject[] { _lanceProjectilePrefab });
@@ -1555,16 +1582,30 @@ namespace RiskOfImpact
                 "Temporary barriers decay <style=cIsUtility>12%</style> <style=cStack>(+12% per stack)</style> slower.");
             LanguageAPI.Add("DM_NAME", "Doomed Moon");
             LanguageAPI.Add("DM_PICKUP", "Revive each stage, but <style=cDeath>but lose items</style>");
-            LanguageAPI.Add("DM_DESC", "Gain a <style=cIsHealing>revive</style> each stage <style=cStack>(+1 per stack)</style>. " +
-                                       "<style=cDeath>Break 5 random items</style> on revive <style=cArtifact>(excluding Void items)</style>. " +
-                                       "After reviving, permanently gain <style=cIsUtility>+10%</style> <style=cStack>(+10% per stack)</style> to <style=cShrine>all stats</style>. " +
+            LanguageAPI.Add("DM_DESC", "Gain a <style=cIsHealing>revive</style> <style=cStack>(per stack)</style> each stage. " +
+                                       "<style=cDeath>Breaks 10% of your items</style> <style=cStack>(5 items minimum)</style> on revive <style=cArtifact>(excluding Void items)</style>. " +
+                                       "After reviving, permanently gain <style=cIsUtility>+10%</style> to <style=cShrine>all stats</style>. " +
                                        "<style=cDeath>Fails if fewer than 5 eligible items exist</style>." );
 
             LanguageAPI.Add("DMC_NAME", "Doomed Moon (Consumed)");
-            LanguageAPI.Add("DMC_DESC", "Gain a <style=cIsHealing>revive</style> each stage <style=cStack>(+1 per stack)</style>. " +
-                                       "<style=cDeath>Break 5 random items</style> on revive <style=cArtifact>(excluding Void items)</style>. " +
-                                       "After reviving, permanently gain <style=cIsUtility>+10%</style> <style=cStack>(+10% per stack)</style> to <style=cShrine>all stats</style>. " +
+            LanguageAPI.Add("DMC_DESC", "Gain a <style=cIsHealing>revive</style> <style=cStack>(per stack)</style> each stage. " +
+                                       "<style=cDeath>Breaks 10% of your items</style> <style=cStack>(5 items minimum)</style> on revive <style=cArtifact>(excluding Void items)</style>. " +
+                                       "After reviving, permanently gain <style=cIsUtility>+10%</style> to <style=cShrine>all stats</style>. " +
                                        "<style=cDeath>Fails if fewer than 5 eligible items exist</style>." );
+            
+            LanguageAPI.Add("RD_NAME", "Risky Dice");
+            LanguageAPI.Add("RD_PICKUP", "Roll fate at chests and Shrines of Chance for bonus rewards... or pay the price.");
+            LanguageAPI.Add("RD_DESC",
+                    "<style=cShrine>Chests</style> and <style=cShrine>Shrines of Chance</style> roll <style=cIsUtility>once</style> <style=cStack>(per stack)</style> per interaction.\n" +
+                    "<style=cShrine>Success</style> (<style=cShrine>19 in 20</style>): Gain <style=cIsUtility>1 Risk</style> and the interactable drops <style=cIsDamage>+1 extra item</style> per successful roll.\n" +
+                    "<style=cDeath>Misfortune</style> (<style=cDeath>1 in 20</style>): You still <style=cDeath>pay the cost</style>, the interaction is <style=cDeath>canceled</style>, and your <style=cIsUtility>Risk resets</style>.\n" +
+                    "You'll receive <style=cWorldEvent>permanent</style> debuffs to <style=cDeath>all stats</style> equal to your total <style=cIsUtility>Risk</style> <style=cStack>(2% per Risk)</style>.\n" +
+                    "If you have 20 or more Risk upon rolling Misfortune, you will <style=cDeath>die</style>.");
+            
+            LanguageAPI.Add("RDA_NAME", "Buyer's Remorse");
+            LanguageAPI.Add("RDA_DESC",
+                "<style=cWorldEvent>Permanent</style>.\n" +
+                "<style=cDeath>Reduce all stats by 2%</style> <style=cStack>(+2% per stack)</style>.");
             
             
             // --- Void corruption setup (Personal Shield Generator -> Biotic Shell) ---
@@ -1667,6 +1708,12 @@ namespace RiskOfImpact
         public static ItemDef GetDoomedMoonItemDef() => _doomedMoon;
         public static ItemDef GetDoomedMoonConsumedItemDef() => _doomedMoonConsumed;
         public static ItemDef GetDoomedMoonStatTokenItemDef() => _doomedMoonStatToken;
+        public static BuffDef GetDoomedMoonBuffDef() => _doomedMoonBuff;
+        public static ItemDef GetRiskyDiceItemDef() => _riskyDice;
+        public static ItemDef GetRiskyDiceCountItemDef() => _riskyDiceCount;
+        public static ItemDef GetRiskyDiceAfflictionItemDef() => _riskyDiceAffliction;
+        public static BuffDef GetRiskyDiceBuffDef() => _riskyDiceBuff;
+
         public static ItemDef GetBioticShellItemDef() => _bioticShell;
 
     }

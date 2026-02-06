@@ -12,6 +12,7 @@ namespace RiskOfImpact
     internal static class DoomedMoonHooks
     {
         private const int ItemsToBreak = 5;
+        private const float PctToBreak = 0.10f;
 
         // Pearl-stat values (matches your pearl table)
         private const float PctPerToken = 0.10f; // health/damage/movespeed/attackspeed
@@ -28,6 +29,9 @@ namespace RiskOfImpact
 
         private static ItemDef _doomedMoonStatTokenDef;
         private static ItemIndex _doomedMoonStatTokenIndex = ItemIndex.None;
+        
+        private static BuffDef _doomedMoonBuffDef;
+        private static BuffIndex _doomedMoonBuffIndex = BuffIndex.None;
 
         private static bool _initialized;
         private static bool _resolvedOnceLogged;
@@ -57,7 +61,8 @@ namespace RiskOfImpact
             if (_doomedMoonIndex != ItemIndex.None &&
                 _doomedMoonConsumedIndex != ItemIndex.None &&
                 _doomedMoonStatTokenIndex != ItemIndex.None &&
-                _doomedMoonDef && _doomedMoonConsumedDef && _doomedMoonStatTokenDef)
+                _doomedMoonBuffIndex != BuffIndex.None &&
+                _doomedMoonDef && _doomedMoonConsumedDef && _doomedMoonStatTokenDef && _doomedMoonBuffDef)
                 return true;
 
             try
@@ -65,6 +70,7 @@ namespace RiskOfImpact
                 _doomedMoonDef = RiskOfImpactContent.GetDoomedMoonItemDef();
                 _doomedMoonConsumedDef = RiskOfImpactContent.GetDoomedMoonConsumedItemDef();
                 _doomedMoonStatTokenDef = RiskOfImpactContent.GetDoomedMoonStatTokenItemDef();
+                _doomedMoonBuffDef =  RiskOfImpactContent.GetDoomedMoonBuffDef();
             }
             catch (Exception e)
             {
@@ -76,12 +82,13 @@ namespace RiskOfImpact
                 return false;
             }
 
-            if (!_doomedMoonDef || !_doomedMoonConsumedDef || !_doomedMoonStatTokenDef)
+            if (!_doomedMoonDef || !_doomedMoonConsumedDef || !_doomedMoonStatTokenDef || !_doomedMoonBuffDef)
                 return false;
 
             _doomedMoonIndex = _doomedMoonDef.itemIndex;
             _doomedMoonConsumedIndex = _doomedMoonConsumedDef.itemIndex;
             _doomedMoonStatTokenIndex = _doomedMoonStatTokenDef.itemIndex;
+            _doomedMoonBuffIndex = _doomedMoonBuffDef.buffIndex;
 
             // Expansion gate follows main item
             if (_doomedMoonConsumedDef.requiredExpansion == null)
@@ -91,7 +98,8 @@ namespace RiskOfImpact
 
             return _doomedMoonIndex != ItemIndex.None
                    && _doomedMoonConsumedIndex != ItemIndex.None
-                   && _doomedMoonStatTokenIndex != ItemIndex.None;
+                   && _doomedMoonStatTokenIndex != ItemIndex.None
+                   && _doomedMoonBuffIndex != BuffIndex.None;
         }
 
         // --------------------------------------------------------------------
@@ -107,7 +115,7 @@ namespace RiskOfImpact
                 var inv = master?.inventory;
                 if (!inv) continue;
 
-                int consumed = inv.GetItemCount(_doomedMoonConsumedIndex);
+                int consumed = inv.GetItemCountPermanent(_doomedMoonConsumedIndex);
                 if (consumed <= 0) continue;
 
                 new Inventory.ItemTransformation
@@ -143,17 +151,15 @@ namespace RiskOfImpact
             var inv = self.inventory;
             if (!inv) return false;
 
-            int activeStacks = inv.GetItemCount(_doomedMoonIndex);
+            int activeStacks = inv.GetItemCountPermanent(_doomedMoonIndex);
             if (activeStacks <= 0)
                 return false;
 
-            // Must have >=5 breakable stacks
-            if (CountBreakableItemStacks(inv) < ItemsToBreak)
+            // Break items
+            if (!BreakRandomItems(inv, ItemsToBreak, PctToBreak))
                 return false;
 
             // IMPORTANT: capture total stacks BEFORE consuming (stable + matches design)
-            int preTotalMoonStacks = activeStacks + inv.GetItemCount(_doomedMoonConsumedIndex);
-
             // Consume one
             Inventory.ItemTransformation.TakeResult takeResult;
             if (!new Inventory.ItemTransformation
@@ -168,20 +174,10 @@ namespace RiskOfImpact
                 return false;
             }
 
-            // Break items
-            BreakRandomItems(inv, ItemsToBreak);
+            // Grant permanent stat token
 
-            // Grant permanent stat tokens equal to total Doomed Moon stacks owned at revive time
-            if (preTotalMoonStacks > 0)
-            {
-                inv.GiveItem(_doomedMoonStatTokenIndex, preTotalMoonStacks);
-                LogInfo("[DoomedMoon] Gave stat tokens: " + preTotalMoonStacks);
-            }
-            else
-            {
-                LogInfo("[DoomedMoon] Didn't give stat token (preTotalMoonStacks <= 0)");
-            }
-
+            inv.GiveItemPermanent(_doomedMoonStatTokenIndex);
+            
             // Schedule respawn like Dio’s via ExtraLifeServerBehavior
             var life = self.gameObject.AddComponent<CharacterMaster.ExtraLifeServerBehavior>();
             life.pendingTransformation = takeResult;
@@ -216,6 +212,7 @@ namespace RiskOfImpact
                 newBody.AddTimedBuff(RoR2Content.Buffs.Immune, 3f);
                 foreach (var esm in newBody.GetComponents<EntityStateMachine>())
                     esm.initialStateType = esm.mainStateType;
+                SyncDoomedMoonBuff(newBody);
             }
 
             var fx = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/HippoRezEffect");
@@ -243,38 +240,34 @@ namespace RiskOfImpact
             if (!body || !body.inventory) return;
             if (!EnsureResolved()) return;
 
-            int tokens = body.inventory.GetItemCount(_doomedMoonStatTokenIndex);
+            if (NetworkServer.active)
+                SyncDoomedMoonBuff(body);
+
+            int tokens = body.inventory.GetItemCountPermanent(_doomedMoonStatTokenIndex);
             if (tokens <= 0) return;
 
-            float pct = PctPerToken * tokens;
+            float pct = PctPerToken * tokens;   // e.g. 0.10f * tokens
+            float mult = 1f + pct;              // e.g. 1.10f, 1.20f, ...
 
-            args.healthMultAdd += pct;
-            args.damageMultAdd += pct;
-            args.moveSpeedMultAdd += pct;
-            args.attackSpeedMultAdd += pct;
+            args.healthTotalMult      *= mult;
+            args.damageTotalMult      *= mult;
+            args.moveSpeedTotalMult   *= mult;
+            args.attackSpeedTotalMult *= mult;
 
-            args.critAdd += CritPerToken * tokens;
+            // These are additive stats; leave as-is
+            args.critAdd  += CritPerToken * tokens;
             args.armorAdd += ArmorPerToken * tokens;
 
+            // Regen in your code is baseRegenAdd (flat), so keep as-is
             args.baseRegenAdd += RegenBase + RegenAddPerExtra * Mathf.Max(0, tokens - 1);
         }
+
 
         // --------------------------------------------------------------------
         // Item breaking logic
         // --------------------------------------------------------------------
-        private static int CountBreakableItemStacks(Inventory inv)
-        {
-            int total = 0;
-            foreach (ItemIndex idx in ItemCatalog.allItems)
-            {
-                if (!IsBreakable(inv, idx)) continue;
-                int count = inv.GetItemCountPermanent(idx);
-                if (count > 0) total += count;
-            }
-            return total;
-        }
 
-        private static void BreakRandomItems(Inventory inv, int toBreak)
+        private static bool BreakRandomItems(Inventory inv, int toBreak, float pctBreak)
         {
             var bag = new List<ItemIndex>(256);
 
@@ -287,19 +280,19 @@ namespace RiskOfImpact
                     bag.Add(idx);
             }
 
-            if (bag.Count < toBreak) return;
+            if (bag.Count < toBreak) return false;
+            int totalBreak = Mathf.Max(toBreak, Mathf.CeilToInt(pctBreak * bag.Count));
 
-            for (int i = 0; i < toBreak; i++)
+            for (int i = 0; i < totalBreak; i++)
             {
                 int pick = UnityEngine.Random.Range(0, bag.Count);
                 ItemIndex chosen = bag[pick];
 
-                inv.RemoveItemPermanent(chosen, 1);
-
+                inv.RemoveItemPermanent(chosen);
                 bag.RemoveAt(pick);
-                if (inv.GetItemCountPermanent(chosen) <= 0)
-                    bag.RemoveAll(x => x == chosen);
             }
+
+            return true;
         }
 
         private static bool IsBreakable(Inventory inv, ItemIndex idx)
@@ -331,5 +324,19 @@ namespace RiskOfImpact
 
             return inv.GetItemCountPermanent(idx) > 0;
         }
+        
+        private static void SyncDoomedMoonBuff(CharacterBody body)
+        {
+            if (!NetworkServer.active) return;
+            if (!body || !body.inventory) return;
+            if (_doomedMoonBuffIndex == BuffIndex.None) return;
+
+            int tokens = body.inventory.GetItemCountPermanent(_doomedMoonStatTokenIndex);
+            tokens = Mathf.Clamp(tokens, 0, 255); // buff stacks are byte-ish in many contexts
+
+            // Best-case: SetBuffCount exists and replicates cleanly
+            body.SetBuffCount(_doomedMoonBuffIndex, tokens);
+        }
+
     }
 }

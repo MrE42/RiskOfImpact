@@ -1,3 +1,6 @@
+# 0.3.0
+* Added RiskyDice lunar item
+* Rebalanced DoomedMoon
 # 0.2.0
 * Added DoomedMoon lunar item
 # 0.1.5

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 using BepInEx.Bootstrap;
 using LookingGlass;
 using LookingGlass.ItemStatsNameSpace;
@@ -39,6 +40,7 @@ namespace RiskOfImpact
                 RegisterMugItemStats();
                 RegisterRedshifterItemStats();
                 RegisterBioticShellItemStats();
+                RegisterRiskyDiceAfflictionItemStats();
             }
             catch (Exception e)
             {
@@ -47,54 +49,54 @@ namespace RiskOfImpact
         }
         
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-private static void RegisterMugItemStats()
-{
-    ItemDef mugItem = RiskOfImpactContent.GetMugItemDef();
-    if (!mugItem)
-    {
-        RiskOfImpactMain.LogError("[Mug LG] Cheerful Mug ItemDef missing, aborting.");
-        return;
-    }
-
-    Dictionary<int, ItemStatsDef> dict = ItemDefinitions.allItemDefinitions;
-    if (dict == null)
-    {
-        RiskOfImpactMain.LogError("[Mug LG] ItemDefinitions.allItemDefinitions is null.");
-        return;
-    }
-
-    if (!dict.TryGetValue((int)mugItem.itemIndex, out ItemStatsDef def))
-    {
-        def = new ItemStatsDef();
-        dict[(int)mugItem.itemIndex] = def;
-    }
-
-    def.descriptions.Clear();
-    def.valueTypes.Clear();
-    def.measurementUnits.Clear();
-
-    // 1) Total bonus
-    def.descriptions.Add("Current bonus: ");
-    def.valueTypes.Add(ItemStatsDef.ValueType.Utility);
-    def.measurementUnits.Add(ItemStatsDef.MeasurementUnits.Percentage);
-
-    // 69% per stack for both move and attack speed
-    def.calculateValuesNew = (float luck, int itemCount, float procChance) =>
-    {
-        if (itemCount <= 0)
-            return new List<float> { 0f, 0f, 0f };
-
-        float perStackPercent = 69f;         // 69% per stack
-        float totalPercent = perStackPercent * itemCount;
-
-        return new List<float>(1)
+        private static void RegisterMugItemStats()
         {
-            totalPercent   / 100f,   // total move speed
-        };
-    };
+            ItemDef mugItem = RiskOfImpactContent.GetMugItemDef();
+            if (!mugItem)
+            {
+                RiskOfImpactMain.LogError("[Mug LG] Cheerful Mug ItemDef missing, aborting.");
+                return;
+            }
 
-    RiskOfImpactMain.LogInfo("[Mug LG] Registered Cheerful Mug item stats with LookingGlass.");
-}
+            Dictionary<int, ItemStatsDef> dict = ItemDefinitions.allItemDefinitions;
+            if (dict == null)
+            {
+                RiskOfImpactMain.LogError("[Mug LG] ItemDefinitions.allItemDefinitions is null.");
+                return;
+            }
+
+            if (!dict.TryGetValue((int)mugItem.itemIndex, out ItemStatsDef def))
+            {
+                def = new ItemStatsDef();
+                dict[(int)mugItem.itemIndex] = def;
+            }
+
+            def.descriptions.Clear();
+            def.valueTypes.Clear();
+            def.measurementUnits.Clear();
+
+            // 1) Total bonus
+            def.descriptions.Add("Current bonus: ");
+            def.valueTypes.Add(ItemStatsDef.ValueType.Utility);
+            def.measurementUnits.Add(ItemStatsDef.MeasurementUnits.Percentage);
+
+            // 69% per stack for both move and attack speed
+            def.calculateValuesNew = (float luck, int itemCount, float procChance) =>
+            {
+                if (itemCount <= 0)
+                    return new List<float> { 0f, 0f, 0f };
+
+                float perStackPercent = 69f;         // 69% per stack
+                float totalPercent = perStackPercent * itemCount;
+
+                return new List<float>(1)
+                {
+                    totalPercent   / 100f,   // total move speed
+                };
+            };
+
+            RiskOfImpactMain.LogInfo("[Mug LG] Registered Cheerful Mug item stats with LookingGlass.");
+        }
 
 
 
@@ -273,6 +275,63 @@ private static void RegisterMugItemStats()
             };
 
             RiskOfImpactMain.LogInfo("[BioticShell LG] Registered Biotic Shell item stats with LookingGlass.");
+        }
+        
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private static void RegisterRiskyDiceAfflictionItemStats()
+        {
+            ItemDef affliction = RiskOfImpactContent.GetRiskyDiceAfflictionItemDef();
+            if (!affliction)
+            {
+                RiskOfImpactMain.LogError("[RiskyDice LG] Affliction ItemDef missing, aborting.");
+                return;
+            }
+
+            Dictionary<int, ItemStatsDef> dict = ItemDefinitions.allItemDefinitions;
+            if (dict == null)
+            {
+                RiskOfImpactMain.LogError("[RiskyDice LG] ItemDefinitions.allItemDefinitions is null.");
+                return;
+            }
+
+            if (!dict.TryGetValue((int)affliction.itemIndex, out ItemStatsDef def))
+            {
+                def = new ItemStatsDef();
+                dict[(int)affliction.itemIndex] = def;
+            }
+
+            def.descriptions.Clear();
+            def.valueTypes.Clear();
+            def.measurementUnits.Clear();
+
+            // Total multiplicative stat debuff (damage/movespeed/attackspeed/regen)
+            def.descriptions.Add("Debuff: ");
+            def.valueTypes.Add(ItemStatsDef.ValueType.Utility);
+            def.measurementUnits.Add(ItemStatsDef.MeasurementUnits.Percentage);
+            
+            def.descriptions.Add("Curse: ");
+            def.valueTypes.Add(ItemStatsDef.ValueType.Utility);
+            def.measurementUnits.Add(ItemStatsDef.MeasurementUnits.Percentage);
+
+
+            def.calculateValuesNew = (float luck, int itemCount, float procChance) =>
+            { 
+                if (itemCount <= 0)
+                    return new List<float>(2) { 0f , 0f };
+
+                // MUST MATCH ApplyMisfortuneAffliction()
+                const float strength = 0.4f;                 // relative to tonic
+                float perStackStatPenalty = 0.05f * strength; // 5% * strength
+                float cursePerStack = 0.1f * strength;
+
+                float multiplier = Mathf.Pow(1f - perStackStatPenalty, itemCount);
+                float debuffFraction = 1f - multiplier;
+                float curseTotal = cursePerStack * itemCount;
+
+                return new List<float>(2) { debuffFraction, curseTotal };
+            };
+
+            RiskOfImpactMain.LogInfo("[RiskyDice LG] Registered Risky Dice affliction debuff with LookingGlass.");
         }
 
     }
