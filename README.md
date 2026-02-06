@@ -5,12 +5,12 @@ Compatible with LookingGlass (and some items appear on CelestialWarTank)
 
 ## Content
 
-Adds **5 items** and **1 equipment**:
+Adds **6 items** and **1 equipment**:
 
 - **1 Uncommon**
 - **2 Legendary**
 - **1 Void**
-- **1 Lunar**
+- **2 Lunar**
 - **1 Lunar Equipment**
 
 
