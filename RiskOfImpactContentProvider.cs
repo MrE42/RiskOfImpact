@@ -1429,7 +1429,7 @@ namespace RiskOfImpact
                     followerPrefab = _mugDisplayPrefab,
                     childName = "Body",
                     localPos = new Vector3(0.53761F, 0.58974F, 0.39026F),
-                    localAngles = new Vector3(307.4664F, 2.9877F, 336.0304F),
+                    localAngles = new Vector3(65.78642F, 158.3518F, 326.1167F),
                     localScale = new Vector3(0.2F, 0.2F, 0.2F)
                 }
             });

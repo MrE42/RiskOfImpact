@@ -19,7 +19,7 @@ MonoBehaviour:
   descriptionToken: DD_DESC
   loreToken: 
   unlockableDef: {fileID: 0}
-  pickupModelPrefab: {fileID: 4277620274938568879, guid: 5821fe7b1c412a84cb3c07d85673cdad, type: 3}
+  pickupModelPrefab: {fileID: 4172572368614508083, guid: dfaf0d21d7f89bb4396fd8da3e815137, type: 3}
   pickupModelReference:
     m_AssetGUID: 
     m_SubObjectName: 

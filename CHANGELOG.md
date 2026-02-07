@@ -1,3 +1,5 @@
+# 0.3.2
+* Reduced asset size significantly (thanks Smxrez!)
 # 0.3.1
 * Fixed RedShifter pickup model
 # 0.3.0
